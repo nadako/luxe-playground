@@ -652,7 +652,7 @@ Main.prototype = $extend(luxe_Game.prototype,{
 		while(_g < _g1.length) {
 			var name = _g1[_g];
 			++_g;
-			config.preload.sounds.push({ id : "assets/" + name, name : name, is_stream : false});
+			config.preload.sounds.push({ id : "assets/sounds/" + name, name : name, is_stream : false});
 		}
 		return config;
 	}
@@ -677,7 +677,8 @@ Main.prototype = $extend(luxe_Game.prototype,{
 	,playRandomSound: function(ent) {
 		Luxe.audio.play(Main.soundFiles[Std.random(Main.soundFiles.length)]);
 		luxe_tween_Actuate.tween(ent.get_scale(),0.25,{ x : 0.8, y : 0.8}).onComplete(function() {
-			luxe_tween_Actuate.tween(ent.get_scale(),0.3,{ x : 1, y : 1});
+			luxe_tween_Actuate.tween(ent.get_scale(),0.25,{ x : 1, y : 1});
+			luxe_tween_Actuate.tween(ent.color,0.25,phoenix_Color.random());
 		});
 	}
 	,__class__: Main
@@ -3831,22 +3832,6 @@ luxe_Core.prototype = $extend(snow_App.prototype,{
 			this.emitter.emit(11);
 			this.game.onpostrender();
 			this.debug.end(luxe_Tag.render);
-			var _batch = this.debug.batcher;
-			if(_batch.enabled) {
-				this.debug.start(luxe_Tag.debug_batch);
-				_batch.draw_calls = 0;
-				_batch.vert_count = 0;
-				_batch.view.process();
-				_batch.renderer.state.viewport(_batch.view.get_viewport().x,_batch.view.get_viewport().y,_batch.view.get_viewport().w,_batch.view.get_viewport().h);
-				_batch.batch(false);
-				this.renderer.stats.geometry_count += _batch.geometry.size();
-				this.renderer.stats.dynamic_batched_count += _batch.dynamic_batched_count;
-				this.renderer.stats.static_batched_count += _batch.static_batched_count;
-				this.renderer.stats.visible_count += _batch.visible_count;
-				this.renderer.stats.draw_calls += _batch.draw_calls;
-				this.renderer.stats.vert_count += _batch.vert_count;
-				this.debug.end(luxe_Tag.debug_batch);
-			}
 		}
 	}
 	,show_console: function(_show) {
@@ -4066,11 +4051,6 @@ luxe_Debug.prototype = {
 	init: function() {
 		luxe_Debug.trace_callbacks = new haxe_ds_StringMap();
 		luxe_Debug.views = [];
-		luxe_Debug.views.push(new luxe_debug_TraceDebugView());
-		luxe_Debug.views.push(new luxe_debug_StatsDebugView());
-		luxe_Debug.views.push(new luxe_debug_ProfilerDebugView());
-		luxe_Debug.views.push(new luxe_debug_SceneDebugView());
-		this.current_view = luxe_Debug.views[0];
 		haxe_Log.trace = luxe_Debug.internal_trace;
 		null;
 	}
@@ -4085,10 +4065,8 @@ luxe_Debug.prototype = {
 		return null;
 	}
 	,start: function(_name,_max) {
-		if(!this.core.headless) luxe_debug_ProfilerDebugView.start(_name,_max);
 	}
 	,end: function(_name) {
-		if(!this.core.headless) luxe_debug_ProfilerDebugView.end(_name);
 	}
 	,remove_trace_listener: function(_name) {
 		luxe_Debug.trace_callbacks.remove(_name);
@@ -4097,46 +4075,6 @@ luxe_Debug.prototype = {
 		luxe_Debug.trace_callbacks.set(_name,_callback);
 	}
 	,create_debug_console: function() {
-		var _g = this;
-		this.core.on(13,$bind(this,this.keyup));
-		this.core.on(12,$bind(this,this.keydown));
-		this.core.on(18,$bind(this,this.mouseup));
-		this.core.on(17,$bind(this,this.mousedown));
-		this.core.on(19,$bind(this,this.mousemove));
-		this.core.on(20,$bind(this,this.mousewheel));
-		this.batcher = new phoenix_Batcher(Luxe.renderer,"debug_batcher");
-		this.view = new phoenix_Camera({ camera_name : "debug_batcher_camera"});
-		this.batcher.view = this.view;
-		this.batcher.set_layer(999);
-		this.overlay = new phoenix_geometry_QuadGeometry({ x : 0, y : 0, w : Luxe.core.screen.get_w(), h : Luxe.core.screen.get_h(), color : new phoenix_Color(0,0,0,0.8), depth : 999, group : 999, visible : false, batcher : this.batcher});
-		this.padding = new phoenix_Vector(Luxe.core.screen.get_w() * 0.05,Luxe.core.screen.get_h() * 0.05);
-		this.debug_inspector = new luxe_debug_Inspector({ title : "luxe debug", pos : new phoenix_Vector(this.padding.x,this.padding.y), size : new phoenix_Vector(Luxe.core.screen.get_w() - this.padding.x * 2,Luxe.core.screen.get_h() - this.padding.y * 2), batcher : this.batcher});
-		this.debug_inspector.onrefresh = $bind(this,this.refresh);
-		this.core.on(31,function(_event) {
-			var _w = _event.event.x;
-			var _h = _event.event.y;
-			var _v = new phoenix_Vector(_w,_h);
-			_g.padding.set_xy(_w * 0.05,_h * 0.05);
-			_g.overlay.resize_xy(_v.x,_v.y);
-			_g.view.set_viewport(new phoenix_Rectangle(0,0,_w,_h));
-			_g.debug_inspector.set_size(new phoenix_Vector(_w - _g.padding.x * 2,_h - _g.padding.y * 2));
-			_g.debug_inspector.set_pos(new phoenix_Vector(_g.padding.x,_g.padding.y));
-			var _g1 = 0;
-			var _g2 = luxe_Debug.views;
-			while(_g1 < _g2.length) {
-				var view = _g2[_g1];
-				++_g1;
-				view.onwindowsized(_event);
-			}
-		});
-		this.batcher.enabled = false;
-		var _g3 = 0;
-		var _g11 = luxe_Debug.views;
-		while(_g3 < _g11.length) {
-			var view1 = _g11[_g3];
-			++_g3;
-			view1.create();
-		}
 	}
 	,mouseup: function(e) {
 		if(this.visible) {
@@ -4218,6 +4156,7 @@ luxe_Debug.prototype = {
 	}
 	,show_console: function(_show) {
 		if(_show == null) _show = true;
+		return;
 		if(_show) {
 			this.last_cursor_shown = Luxe.core.screen.cursor.get_visible();
 			this.last_cursor_grab = Luxe.core.screen.cursor.get_grab();
@@ -22169,7 +22108,7 @@ if(ArrayBuffer.prototype.slice == null) ArrayBuffer.prototype.slice = js_html_co
 var Uint8Array = (Function("return typeof Uint8Array != 'undefined' ? Uint8Array : null"))() || js_html_compat_Uint8Array._new;
 Luxe.version = "dev";
 Luxe.build = "+0ba9de7ec3";
-Main.soundFiles = ["highDown.mp3","highUp.mp3","laser1.mp3","laser2.mp3","laser3.mp3","laser4.mp3","laser5.mp3","laser6.mp3","laser7.mp3","laser8.mp3","laser9.mp3","lowDown.mp3","lowRandom.mp3","lowThreeTone.mp3","pepSound1.mp3","pepSound2.mp3","pepSound3.mp3","pepSound4.mp3","pepSound5.mp3","phaseJump1.mp3","phaseJump2.mp3","phaseJump3.mp3","phaseJump4.mp3","phaseJump5.mp3","phaserDown1.mp3","phaserDown2.mp3","phaserDown3.mp3","phaserUp1.mp3","phaserUp2.mp3","phaserUp3.mp3","phaserUp4.mp3","phaserUp5.mp3","phaserUp6.mp3","phaserUp7.mp3","powerUp1.mp3","powerUp10.mp3","powerUp11.mp3","powerUp12.mp3","powerUp2.mp3","powerUp3.mp3","powerUp4.mp3","powerUp5.mp3","powerUp6.mp3","powerUp7.mp3","powerUp8.mp3","powerUp9.mp3","spaceTrash1.mp3","spaceTrash2.mp3","spaceTrash3.mp3","spaceTrash4.mp3","spaceTrash5.mp3","threeTone1.mp3","threeTone2.mp3","tone1.mp3","twoTone1.mp3","twoTone2.mp3","zap1.mp3","zap2.mp3","zapThreeToneDown.mp3","zapThreeToneUp.mp3","zapTwoTone.mp3","zapTwoTone2.mp3"];
+Main.soundFiles = ["highDown.ogg","highUp.ogg","laser1.ogg","laser2.ogg","laser3.ogg","laser4.ogg","laser5.ogg","laser6.ogg","laser7.ogg","laser8.ogg","laser9.ogg","lowDown.ogg","lowRandom.ogg","lowThreeTone.ogg","pepSound1.ogg","pepSound2.ogg","pepSound3.ogg","pepSound4.ogg","pepSound5.ogg","phaseJump1.ogg","phaseJump2.ogg","phaseJump3.ogg","phaseJump4.ogg","phaseJump5.ogg","phaserDown1.ogg","phaserDown2.ogg","phaserDown3.ogg","phaserUp1.ogg","phaserUp2.ogg","phaserUp3.ogg","phaserUp4.ogg","phaserUp5.ogg","phaserUp6.ogg","phaserUp7.ogg","powerUp1.ogg","powerUp10.ogg","powerUp11.ogg","powerUp12.ogg","powerUp2.ogg","powerUp3.ogg","powerUp4.ogg","powerUp5.ogg","powerUp6.ogg","powerUp7.ogg","powerUp8.ogg","powerUp9.ogg","spaceTrash1.ogg","spaceTrash2.ogg","spaceTrash3.ogg","spaceTrash4.ogg","spaceTrash5.ogg","threeTone1.ogg","threeTone2.ogg","tone1.ogg","twoTone1.ogg","twoTone2.ogg","zap1.ogg","zap2.ogg","zapThreeToneDown.ogg","zapThreeToneUp.ogg","zapTwoTone.ogg","zapTwoTone2.ogg"];
 haxe_Serializer.USE_CACHE = false;
 haxe_Serializer.USE_ENUM_INDEX = false;
 haxe_Serializer.BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%:";

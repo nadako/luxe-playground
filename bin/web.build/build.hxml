@@ -4,6 +4,7 @@
 -D arch-web
 -D source-map-content
 -D hxcpp_static_std
+-D no_debug_console
 -D snow_module_audio_howlerjs
 -D luxe_web
 -D snow_web

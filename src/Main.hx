@@ -12,11 +12,20 @@ class EventOnClick extends luxe.Component {
         visual = cast entity;
     }
 
+    #if !mobile
     override function onmousedown(event :MouseEvent) {
         if (Luxe.utils.geometry.point_in_geometry(event.pos, visual.geometry)) {
             entity.events.fire('clicked', entity);
         }
     }
+    #else
+    override function ontouchdown(event :TouchEvent) {
+        var pos = new Vector(event.x * Luxe.screen.w, event.y * Luxe.screen.h);
+        if (Luxe.utils.geometry.point_in_geometry(pos, visual.geometry)) {
+            entity.events.fire('clicked', entity);
+        }
+    }
+    #end
 }
 
 class Main extends luxe.Game {
@@ -24,7 +33,7 @@ class Main extends luxe.Game {
 
     override function config(config:luxe.AppConfig) {
         for (name in soundFiles)
-            config.preload.sounds.push({id: 'assets/$name', name: name, is_stream: false});
+            config.preload.sounds.push({id: "assets/sounds/" + name, name: name, is_stream: false});
         return config;
     }
 
@@ -49,6 +58,9 @@ class Main extends luxe.Game {
 
     function playRandomSound(ent:Sprite) {
         Luxe.audio.play(soundFiles[Std.random(soundFiles.length)]);
-        Actuate.tween(ent.scale, 0.25, {x: 0.8, y: 0.8}).onComplete(function() Actuate.tween(ent.scale, 0.3, {x: 1, y: 1}));
+        Actuate.tween(ent.scale, 0.25, {x: 0.8, y: 0.8}).onComplete(function() {
+            Actuate.tween(ent.scale, 0.25, {x: 1, y: 1});
+            Actuate.tween(ent.color, 0.25, Color.random());
+        });
     }
 }
